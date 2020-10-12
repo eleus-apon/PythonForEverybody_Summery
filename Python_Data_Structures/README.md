@@ -505,8 +505,7 @@ When you are done writing, you have to close the file to make sure that the last
 We could close the files which we open for read as well, but we can be a little sloppy if we are only opening a few files since Python makes sure that all open files are closed when the program ends. When we are writing files, we want to explicitly close the files so as to leave nothing to chance.
 
 
-## Exercises
-Lists
+## Chapter8: Lists
 A list is a sequence
 Like a string, a list is a sequence of values. In a string, the values are characters; in a list, they can be any type. The values in list are called elements or sometimes items.
 
@@ -744,6 +743,423 @@ An alternative is to write a function that creates and returns a new list. For e
 def tail(t):
     return t[1:]
 This function leaves the original list unmodified. Here's how it is used:
+
+## Chapter9: Dictionaries
+A dictionary is like a list, but more general. In a list, the index positions have to be integers; in a dictionary, the indices can be (almost) any type.
+
+You can think of a dictionary as a mapping between a set of indices (which are called keys) and a set of values. Each key maps to a value. The association of a key and a value is called a key-value pair or sometimes an item.
+
+As an example, we'll build a dictionary that maps from English to Spanish words, so the keys and the values are all strings.
+
+The function dict creates a new dictionary with no items. Because dict is the name of a built-in function, you should avoid using it as a variable name.
+
+
+The curly brackets, {}, represent an empty dictionary. To add items to the dictionary, you can use square brackets:
+
+>>> eng2sp['one'] = 'uno'
+This line creates an item that maps from the key 'one' to the value "uno". If we print the dictionary again, we see a key-value pair with a colon between the key and value:
+
+>>> print(eng2sp)
+{'one': 'uno'}
+This output format is also an input format. For example, you can create a new dictionary with three items. But if you print eng2sp, you might be surprised:
+
+>>> eng2sp = {'one': 'uno', 'two': 'dos', 'three': 'tres'}
+>>> print(eng2sp)
+{'one': 'uno', 'three': 'tres', 'two': 'dos'}
+The order of the key-value pairs is not the same. In fact, if you type the same example on your computer, you might get a different result. In general, the order of items in a dictionary is unpredictable.
+
+But that's not a problem because the elements of a dictionary are never indexed with integer indices. Instead, you use the keys to look up the corresponding values:
+
+>>> print(eng2sp['two'])
+'dos'
+The key 'two' always maps to the value "dos" so the order of the items doesn't matter.
+
+If the key isn't in the dictionary, you get an exception:
+
+>>> print(eng2sp['four'])
+KeyError: 'four'
+The len function works on dictionaries; it returns the number of key-value pairs:
+
+>>> len(eng2sp)
+3
+The in operator works on dictionaries; it tells you whether something appears as a key in the dictionary (appearing as a value is not good enough).
+
+>>> 'one' in eng2sp
+True
+>>> 'uno' in eng2sp
+False
+To see whether something appears as a value in a dictionary, you can use the method values, which returns the values as a list, and then use the in operator:
+
+>>> vals = list(eng2sp.values())
+>>> 'uno' in vals
+True
+The in operator uses different algorithms for lists and dictionaries. For lists, it uses a linear search algorithm. As the list gets longer, the search time gets longer in direct proportion to the length of the list. For dictionaries, Python uses an algorithm called a hash table that has a remarkable property: the in operator takes about the same amount of time no matter how many items there are in a dictionary. I won't explain why hash functions are so magical, but you can read more about it at wikipedia.org/wiki/Hash_table.
+
+Exercise 1: [wordlist2]
+
+Write a program that reads the words in words.txt and stores them as keys in a dictionary. It doesn't matter what the values are. Then you can use the in operator as a fast way to check whether a string is in the dictionary.
+
+Dictionary as a set of counters
+Suppose you are given a string and you want to count how many times each letter appears. There are several ways you could do it:
+
+You could create 26 variables, one for each letter of the alphabet. Then you could traverse the string and, for each character, increment the corresponding counter, probably using a chained conditional.
+
+You could create a list with 26 elements. Then you could convert each character to a number (using the built-in function ord), use the number as an index into the list, and increment the appropriate counter.
+
+You could create a dictionary with characters as keys and counters as the corresponding values. The first time you see a character, you would add an item to the dictionary. After that you would increment the value of an existing item.
+
+Each of these options performs the same computation, but each of them implements that computation in a different way.
+
+An implementation is a way of performing a computation; some implementations are better than others. For example, an advantage of the dictionary implementation is that we don't have to know ahead of time which letters appear in the string and we only have to make room for the letters that do appear.
+
+Here is what the code might look like:
+
+
+We are effectively computing a histogram, which is a statistical term for a set of counters (or frequencies).
+
+The for loop traverses the string. Each time through the loop, if the character c is not in the dictionary, we create a new item with key c and the initial value 1 (since we have seen this letter once). If c is already in the dictionary we increment d[c].
+
+Here's the output of the program:
+
+{'a': 1, 'b': 1, 'o': 2, 'n': 1, 's': 2, 'r': 2, 'u': 2, 't': 1}
+The histogram indicates that the letters 'a' and "b" appear once; "o" appears twice, and so on.
+
+Dictionaries have a method called get that takes a key and a default value. If the key appears in the dictionary, get returns the corresponding value; otherwise it returns the default value. For example:
+
+
+We can use get to write our histogram loop more concisely. Because the get method automatically handles the case where a key is not in a dictionary, we can reduce four lines down to one and eliminate the if statement.
+
+word = 'brontosaurus'
+d = dict()
+for c in word:
+    d[c] = d.get(c,0) + 1
+print(d)
+The use of the get method to simplify this counting loop ends up being a very commonly used "idiom" in Python and we will use it many times in the rest of the book. So you should take a moment and compare the loop using the if statement and in operator with the loop using the get method. They do exactly the same thing, but one is more succinct.
+
+Dictionaries and files
+One of the common uses of a dictionary is to count the occurrence of words in a file with some written text. Let's start with a very simple file of words taken from the text of Romeo and Juliet.
+
+For the first set of examples, we will use a shortened and simplified version of the text with no punctuation. Later we will work with the text of the scene with punctuation included.
+
+But soft what light through yonder window breaks
+It is the east and Juliet is the sun
+Arise fair sun and kill the envious moon
+Who is already sick and pale with grief
+We will write a Python program to read through the lines of the file, break each line into a list of words, and then loop through each of the words in the line and count each word using a dictionary.
+
+You will see that we have two for loops. The outer loop is reading the lines of the file and the inner loop is iterating through each of the words on that particular line. This is an example of a pattern called nested loops because one of the loops is the outer loop and the other loop is the inner loop.
+
+Because the inner loop executes all of its iterations each time the outer loop makes a single iteration, we think of the inner loop as iterating "more quickly" and the outer loop as iterating more slowly.
+
+The combination of the two nested loops ensures that we will count every word on every line of the input file.
+
+
+When we run the program, we see a raw dump of all of the counts in unsorted hash order. (the romeo.txt file is available at www.py4e.com/code3/romeo.txt)
+
+python count1.py
+Enter the file name: romeo.txt
+{'and': 3, 'envious': 1, 'already': 1, 'fair': 1,
+'is': 3, 'through': 1, 'pale': 1, 'yonder': 1,
+'what': 1, 'sun': 2, 'Who': 1, 'But': 1, 'moon': 1,
+'window': 1, 'sick': 1, 'east': 1, 'breaks': 1,
+'grief': 1, 'with': 1, 'light': 1, 'It': 1, 'Arise': 1,
+'kill': 1, 'the': 3, 'soft': 1, 'Juliet': 1}
+It is a bit inconvenient to look through the dictionary to find the most common words and their counts, so we need to add some more Python code to get us the output that will be more helpful.
+
+Looping and dictionaries
+If you use a dictionary as the sequence in a for statement, it traverses the keys of the dictionary. This loop prints each key and the corresponding value:
+
+counts = { 'chuck' : 1 , 'annie' : 42, 'jan': 100}
+for key in counts:
+    print(key, counts[key])
+Here's what the output looks like:
+
+jan 100
+chuck 1
+annie 42
+Again, the keys are in no particular order.
+
+We can use this pattern to implement the various loop idioms that we have described earlier. For example if we wanted to find all the entries in a dictionary with a value above ten, we could write the following code:
+
+counts = { 'chuck' : 1 , 'annie' : 42, 'jan': 100}
+for key in counts:
+    if counts[key] > 10 :
+        print(key, counts[key])
+The for loop iterates through the keys of the dictionary, so we must use the index operator to retrieve the corresponding value for each key. Here's what the output looks like:
+
+jan 100
+annie 42
+We see only the entries with a value above 10.
+
+If you want to print the keys in alphabetical order, you first make a list of the keys in the dictionary using the keys method available in dictionary objects, and then sort that list and loop through the sorted list, looking up each key and printing out key-value pairs in sorted order as follows:
+
+counts = { 'chuck' : 1 , 'annie' : 42, 'jan': 100}
+lst = list(counts.keys())
+print(lst)
+lst.sort()
+for key in lst:
+    print(key, counts[key])
+Here's what the output looks like:
+
+['jan', 'chuck', 'annie']
+annie 42
+chuck 1
+jan 100
+First you see the list of keys in unsorted order that we get from the keys method. Then we see the key-value pairs in order from the for loop.
+
+Advanced text parsing
+In the above example using the file romeo.txt, we made the file as simple as possible by removing all punctuation by hand. The actual text has lots of punctuation, as shown below.
+
+But, soft! what light through yonder window breaks?
+It is the east, and Juliet is the sun.
+Arise, fair sun, and kill the envious moon,
+Who is already sick and pale with grief,
+Since the Python split function looks for spaces and treats words as tokens separated by spaces, we would treat the words "soft!" and "soft" as different words and create a separate dictionary entry for each word.
+
+Also since the file has capitalization, we would treat "who" and "Who" as different words with different counts.
+
+We can solve both these problems by using the string methods lower, punctuation, and translate. The translate is the most subtle of the methods. Here is the documentation for translate:
+
+line.translate(str.maketrans(fromstr, tostr, deletestr))
+
+Replace the characters in fromstr with the character in the same position in tostr and delete all characters that are in deletestr. The fromstr and tostr can be empty strings and the deletestr parameter can be omitted.
+
+We will not specify the table but we will use the deletechars parameter to delete all of the punctuation. We will even let Python tell us the list of characters that it considers "punctuation":
+
+>>> import string
+>>> string.punctuation
+'!"#$%&\'()*+,-./:;<=>?@[\\]^_`{|}~'
+The parameters used by translate were different in Python 2.0.
+
+We make the following modifications to our program:
+
+
+Part of learning the "Art of Python" or "Thinking Pythonically" is realizing that Python often has built-in capabilities for many common data analysis problems. Over time, you will see enough example code and read enough of the documentation to know where to look to see if someone has already written something that makes your job much easier.
+
+The following is an abbreviated version of the output:
+
+Enter the file name: romeo-full.txt
+{'swearst': 1, 'all': 6, 'afeard': 1, 'leave': 2, 'these': 2,
+'kinsmen': 2, 'what': 11, 'thinkst': 1, 'love': 24, 'cloak': 1,
+a': 24, 'orchard': 2, 'light': 5, 'lovers': 2, 'romeo': 40,
+'maiden': 1, 'whiteupturned': 1, 'juliet': 32, 'gentleman': 1,
+'it': 22, 'leans': 1, 'canst': 1, 'having': 1, ...}
+Looking through this output is still unwieldy and we can use Python to give us exactly what we are looking for, but to do so, we need to learn about Python tuples. We will pick up this example once we learn about tuples
+
+
+## Chapter 10: Tuples
+Tuples are immutable
+A tuple1 is a sequence of values much like a list. The values stored in a tuple can be any type, and they are indexed by integers. The important difference is that tuples are immutable. Tuples are also comparable and hashable so we can sort lists of them and use tuples as key values in Python dictionaries.
+
+Syntactically, a tuple is a comma-separated list of values:
+
+>>> t = 'a', 'b', 'c', 'd', 'e'
+Although it is not necessary, it is common to enclose tuples in parentheses to help us quickly identify tuples when we look at Python code:
+
+>>> t = ('a', 'b', 'c', 'd', 'e')
+To create a tuple with a single element, you have to include the final comma:
+
+
+Without the comma Python treats ('a') as an expression with a string in parentheses that evaluates to a string:
+
+>>> t2 = ('a')
+>>> type(t2)
+<type 'str'>
+Another way to construct a tuple is the built-in function tuple. With no argument, it creates an empty tuple:
+
+
+If the argument is a sequence (string, list, or tuple), the result of the call to tuple is a tuple with the elements of the sequence:
+
+
+Because tuple is the name of a constructor, you should avoid using it as a variable name.
+
+Most list operators also work on tuples. The bracket operator indexes an element:
+
+
+And the slice operator selects a range of elements.
+
+>>> print(t[1:3])
+('b', 'c')
+But if you try to modify one of the elements of the tuple, you get an error:
+
+>>> t[0] = 'A'
+TypeError: object doesn't support item assignment
+You can't modify the elements of a tuple, but you can replace one tuple with another:
+
+
+Comparing tuples
+The comparison operators work with tuples and other sequences. Python starts by comparing the first element from each sequence. If they are equal, it goes on to the next element, and so on, until it finds elements that differ. Subsequent elements are not considered (even if they are really big).
+
+
+The sort function works the same way. It sorts primarily by first element, but in the case of a tie, it sorts by second element, and so on.
+
+This feature lends itself to a pattern called DSU for
+
+Decorate
+a sequence by building a list of tuples with one or more sort keys preceding the elements from the sequence,
+
+Sort
+the list of tuples using the Python built-in sort, and
+
+Undecorate
+by extracting the sorted elements of the sequence.
+
+[DSU]
+
+For example, suppose you have a list of words and you want to sort them from longest to shortest:
+
+
+The first loop builds a list of tuples, where each tuple is a word preceded by its length.
+
+sort compares the first element, length, first, and only considers the second element to break ties. The keyword argument reverse=True tells sort to go in decreasing order.
+
+The second loop traverses the list of tuples and builds a list of words in descending order of length. The four-character words are sorted in reverse alphabetical order, so "what" appears before "soft" in the following list.
+
+The output of the program is as follows:
+
+['yonder', 'window', 'breaks', 'light', 'what',
+'soft', 'but', 'in']
+Of course the line loses much of its poetic impact when turned into a Python list and sorted in descending word length order.
+
+Tuple assignment
+One of the unique syntactic features of the Python language is the ability to have a tuple on the left side of an assignment statement. This allows you to assign more than one variable at a time when the left side is a sequence.
+
+In this example we have a two-element list (which is a sequence) and assign the first and second elements of the sequence to the variables x and y in a single statement.
+
+
+It is not magic, Python roughly translates the tuple assignment syntax to be the following:2
+
+
+Stylistically when we use a tuple on the left side of the assignment statement, we omit the parentheses, but the following is an equally valid syntax:
+
+>>> m = [ 'have', 'fun' ]
+>>> (x, y) = m
+>>> x
+'have'
+>>> y
+'fun'
+>>>
+A particularly clever application of tuple assignment allows us to swap the values of two variables in a single statement:
+
+>>> a, b = b, a
+Both sides of this statement are tuples, but the left side is a tuple of variables; the right side is a tuple of expressions. Each value on the right side is assigned to its respective variable on the left side. All the expressions on the right side are evaluated before any of the assignments.
+
+The number of variables on the left and the number of values on the right must be the same:
+
+>>> a, b = 1, 2, 3
+ValueError: too many values to unpack
+More generally, the right side can be any kind of sequence (string, list, or tuple). For example, to split an email address into a user name and a domain, you could write:
+
+>>> addr = 'monty@python.org'
+>>> uname, domain = addr.split('@')
+The return value from split is a list with two elements; the first element is assigned to uname, the second to domain.
+
+>>> print(uname)
+monty
+>>> print(domain)
+python.org
+Dictionaries and tuples
+Dictionaries have a method called items that returns a list of tuples, where each tuple is a key-value pair:
+
+
+As you should expect from a dictionary, the items are in no particular order.
+
+However, since the list of tuples is a list, and tuples are comparable, we can now sort the list of tuples. Converting a dictionary to a list of tuples is a way for us to output the contents of a dictionary sorted by key:
+
+>>> d = {'a':10, 'b':1, 'c':22}
+>>> t = list(d.items())
+>>> t
+[('b', 1), ('a', 10), ('c', 22)]
+>>> t.sort()
+>>> t
+[('a', 10), ('b', 1), ('c', 22)]
+The new list is sorted in ascending alphabetical order by the key value.
+
+Multiple assignment with dictionaries
+Combining items, tuple assignment, and for, you can see a nice code pattern for traversing the keys and values of a dictionary in a single loop:
+
+for key, val in list(d.items()):
+    print(val, key)
+This loop has two iteration variables because items returns a list of tuples and key, val is a tuple assignment that successively iterates through each of the key-value pairs in the dictionary.
+
+For each iteration through the loop, both key and value are advanced to the next key-value pair in the dictionary (still in hash order).
+
+The output of this loop is:
+
+10 a
+22 c
+1 b
+Again, it is in hash key order (i.e., no particular order).
+
+If we combine these two techniques, we can print out the contents of a dictionary sorted by the value stored in each key-value pair.
+
+To do this, we first make a list of tuples where each tuple is (value, key). The items method would give us a list of (key, value) tuples, but this time we want to sort by value, not key. Once we have constructed the list with the value-key tuples, it is a simple matter to sort the list in reverse order and print out the new, sorted list.
+
+>>> d = {'a':10, 'b':1, 'c':22}
+>>> l = list()
+>>> for key, val in d.items() :
+...     l.append( (val, key) )
+...
+>>> l
+[(10, 'a'), (22, 'c'), (1, 'b')]
+>>> l.sort(reverse=True)
+>>> l
+[(22, 'c'), (10, 'a'), (1, 'b')]
+>>>
+By carefully constructing the list of tuples to have the value as the first element of each tuple, we can sort the list of tuples and get our dictionary contents sorted by value.
+
+The most common words
+Coming back to our running example of the text from Romeo and Juliet Act 2, Scene 2, we can augment our program to use this technique to print the ten most common words in the text as follows:
+
+
+The first part of the program which reads the file and computes the dictionary that maps each word to the count of words in the document is unchanged. But instead of simply printing out counts and ending the program, we construct a list of (val, key) tuples and then sort the list in reverse order.
+
+Since the value is first, it will be used for the comparisons. If there is more than one tuple with the same value, it will look at the second element (the key), so tuples where the value is the same will be further sorted by the alphabetical order of the key.
+
+At the end we write a nice for loop which does a multiple assignment iteration and prints out the ten most common words by iterating through a slice of the list (lst[:10]).
+
+So now the output finally looks like what we want for our word frequency analysis.
+
+61 i
+42 and
+40 romeo
+34 to
+34 the
+32 thou
+32 juliet
+30 that
+29 my
+24 thee
+The fact that this complex data parsing and analysis can be done with an easy-to-understand 19-line Python program is one reason why Python is a good choice as a language for exploring information.
+
+Using tuples as keys in dictionaries
+Because tuples are hashable and lists are not, if we want to create a composite key to use in a dictionary we must use a tuple as the key.
+
+We would encounter a composite key if we wanted to create a telephone directory that maps from last-name, first-name pairs to telephone numbers. Assuming that we have defined the variables last, first, and number, we could write a dictionary assignment statement as follows:
+
+directory[last,first] = number
+The expression in brackets is a tuple. We could use tuple assignment in a for loop to traverse this dictionary.
+
+for last, first in directory:
+    print(first, last, directory[last,first])
+This loop traverses the keys in directory, which are tuples. It assigns the elements of each tuple to last and first, then prints the name and corresponding telephone number.
+
+Sequences: strings, lists, and tuples - Oh My!
+I have focused on lists of tuples, but almost all of the examples in this chapter also work with lists of lists, tuples of tuples, and tuples of lists. To avoid enumerating the possible combinations, it is sometimes easier to talk about sequences of sequences.
+
+In many contexts, the different kinds of sequences (strings, lists, and tuples) can be used interchangeably. So how and why do you choose one over the others?
+
+To start with the obvious, strings are more limited than other sequences because the elements have to be characters. They are also immutable. If you need the ability to change the characters in a string (as opposed to creating a new string), you might want to use a list of characters instead.
+
+Lists are more common than tuples, mostly because they are mutable. But there are a few cases where you might prefer tuples:
+
+In some contexts, like a return statement, it is syntactically simpler to create a tuple than a list. In other contexts, you might prefer a list.
+
+If you want to use a sequence as a dictionary key, you have to use an immutable type like a tuple or string.
+
+If you are passing a sequence as an argument to a function, using tuples reduces the potential for unexpected behavior due to aliasing.
+
+Because tuples are immutable, they don't provide methods like sort and reverse, which modify existing lists. However Python provides the built-in functions sorted and reversed, which take any sequence as a parameter and return a new sequence with the same elements in a different order.
 
 
 
